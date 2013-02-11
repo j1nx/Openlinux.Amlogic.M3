@@ -1237,6 +1237,7 @@ hdmi_task_handle(void *data)
 
         if (hdmitx_device->hpd_event == 1)
         {
+	    printk("hdmi_task_handle\n");
 #ifdef HDMI_SINK_NO_EDID
             msleep(500);
 #endif
@@ -1244,6 +1245,9 @@ hdmi_task_handle(void *data)
                 hdmi_print(1,"HDMI: EDID Ready\n");
                 hdmitx_edid_clear(hdmitx_device);
                 hdmitx_edid_parse(hdmitx_device);
+                {
+                   cec_node_init(hdmitx_device);
+                }
 #ifdef HDMI_SINK_NO_EDID
                 force_output_mode = 0;
 #endif
