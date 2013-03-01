@@ -447,10 +447,10 @@ static int __init early_mem(char *p)
 			init_mach_mdesc->video_start>start &&
 			init_mach_mdesc->video_end>init_mach_mdesc->video_start)
 		{
-			unsigned long vstart, vend, vsize;
+			unsigned long vstart, vend; // , vsize;
 			vstart=init_mach_mdesc->video_start;
 			vend=init_mach_mdesc->video_end;
-			vsize = size > (vstart - start) ? (vstart - start) : size;
+			// vsize = size > (vstart - start) ? (vstart - start) : size;
 			/* 0M-64M */
 			arm_add_memory(bankstart, vstart - bankstart);
 			bankstart = PAGE_ALIGN(vend);
@@ -477,14 +477,14 @@ static int __init early_mem(char *p)
 			firmwaresize = SZ_1M;
 			firmwareend = firmwarestart + firmwaresize;
 			/* 170M-511M */
-			printk("bankstart=0x%x, size=0x%x\n", bankstart,  firmwarestart - bankstart);
+			printk("bankstart=0x%x, size=0x%x\n", (unsigned int)bankstart, (unsigned int)(firmwarestart - bankstart));
 			if(firmwarestart - bankstart > 0)
 				arm_add_memory(bankstart, firmwarestart - bankstart);
 			bankstart = PAGE_ALIGN(firmwareend);
 		}
 #endif
 		/* 170-end or 512-end (ifdef CONFIG_AML_SUSPEND) */
-		printk("bankstart=0x%x, size=0x%x\n", bankstart,  start + size - bankstart);
+		printk("bankstart=0x%x, size=0x%x\n", (unsigned int)bankstart, (unsigned int)(start + size - bankstart));
 		if (bankstart < start + size)
 			arm_add_memory(bankstart, start + size - bankstart);
 	}
