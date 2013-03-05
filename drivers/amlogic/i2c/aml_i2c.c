@@ -489,7 +489,7 @@ static int aml_i2c_xfer_s2(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
       }
 	else {
 		dev_err(&i2c_adap->dev, "[aml_i2c_xfer_s2] error ret = %d (%s) token %d\t"
-                   "master_no(%d) %s %dK addr 0x%x\n", 
+                   "master_no(%d) %dK addr 0x%x\n", 
                    ret, ret == -EIO ? "-EIO" : "-ETIMEOUT", i2c->cur_token,
 			i2c->master_no, i2c->master_i2c_speed2/1000, 
 			i2c->cur_slave_addr);
@@ -700,11 +700,11 @@ static int aml_i2c_probe(struct platform_device *pdev)
 {
 	int ret;
 	
-	printk("%s : %s\n", __FILE__, __FUNCTION__);
 	struct aml_i2c_platform *plat = pdev->dev.platform_data;
 	struct resource *res; 
 	struct aml_i2c *i2c = kzalloc(sizeof(struct aml_i2c), GFP_KERNEL);
 
+	printk("%s : %s\n", __FILE__, __FUNCTION__);
 
 	i2c->ops = &aml_i2c_m1_ops;
 
@@ -712,7 +712,7 @@ static int aml_i2c_probe(struct platform_device *pdev)
 	i2c->master_no = plat->master_no;
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	i2c->master_regs = (struct aml_i2c_reg_master __iomem*)(res->start);
-	printk("master_no = %d, resource = %x, maseter_regs=\n", i2c->master_no, res, i2c->master_regs);
+	printk("master_no = %d, resource = %x, maseter_regs=%x\n", i2c->master_no, res, i2c->master_regs);
 
 	BUG_ON(!i2c->master_regs);
 	BUG_ON(!plat);
@@ -804,9 +804,10 @@ static struct platform_driver aml_i2c_driver = {
 
 static int __init aml_i2c_init(void) 
 {
+	int ret;
+
 	printk("%s : %s\n", __FILE__, __FUNCTION__);
 
-	int ret;
 #ifdef CONFIG_ARCH_MESON3	
 	mutex_init(&aml_i2c_xfer_lock);
 	ret	= platform_driver_register(&aml_i2c_driver);
