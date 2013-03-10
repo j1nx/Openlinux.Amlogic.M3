@@ -23,6 +23,7 @@
 #include <linux/module.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
+#include <linux/kobject.h>
 #include <linux/kthread.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
@@ -35,6 +36,7 @@
 #include <linux/mutex.h>
 #include <linux/cdev.h>
 #include <linux/proc_fs.h> 
+
 #include <asm/uaccess.h>
 #include <mach/am_regs.h>
 #include <mach/clock.h>
@@ -1269,6 +1271,7 @@ hdmi_task_handle(void *data)
             hdmitx_device->hpd_state = 1;
             if(hdmitx_device->hpd_event ==1)
                 hdmitx_device->hpd_event = 0;
+            kobject_uevent(&hdmitx_dev->kobj, KOBJ_CHANGE);
         }
         if(hdmitx_device->hpd_event == 2)
         {
@@ -1297,6 +1300,7 @@ hdmi_task_handle(void *data)
             if(hdmitx_device->hpd_event == 2)
                 hdmitx_device->hpd_event = 0;
             hdmitx_device->hpd_state = 0;
+            kobject_uevent(&hdmitx_dev->kobj, KOBJ_CHANGE);
             hdmitx_device->vic_count = 0;
             if(hdmi_hdcp_status == 1){
                 hdmi_hdcp_reset = 1;
@@ -1629,6 +1633,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 		return r;
 	}    
 
+    kobject_uevent(&hdmitx_dev->kobj, KOBJ_ADD);
+
     return r;
 }
 
@@ -1670,6 +1676,9 @@ static int amhdmitx_remove(struct platform_device *pdev)
     class_destroy(hdmitx_class);
 
     unregister_chrdev_region(hdmitx_id, HDMI_TX_COUNT);
+
+    kobject_uevent(&hdmitx_dev->kobj, KOBJ_REMOVE);
+
     return 0;
 }
 
