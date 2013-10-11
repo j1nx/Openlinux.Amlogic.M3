@@ -156,7 +156,6 @@ static unsigned char init_flag=INIT_FLAG_POWERDOWN;
 static unsigned char init_powermode=0x80;
 #else
 static unsigned char init_flag=INIT_FLAG_CEC_FUNC;
-extern unsigned char uboot_vmode_flag = 0;
 static unsigned char init_powermode=0;
 #endif
 #undef DISABLE_AUDIO

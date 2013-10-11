@@ -2554,8 +2554,8 @@ void cec_init(hdmitx_dev_t* hdmitx_device)
     int i;
     printk("CEC Init\n");
     if (cec_init_flag == 1) return;     
-    if(!((hdmi_cec_func_config>>CEC_FUNC_MSAK) & 0x1)){^M
-        hdmitx_cec_dbg_print("CEC not init\n");^M
+    if(!((hdmi_cec_func_config>>CEC_FUNC_MSAK) & 0x1)){
+        hdmitx_cec_dbg_print("CEC not init\n");
         return ;
     }
     hdmitx_cec_dbg_print("CEC init\n");    
@@ -2617,7 +2617,7 @@ void cec_init(hdmitx_dev_t* hdmitx_device)
 
 void cec_uninit(hdmitx_dev_t* hdmitx_device)
 {
-    printk("CEC Uninit\n");^M
+    printk("CEC Uninit\n");
     if(!((hdmi_cec_func_config>>CEC_FUNC_MSAK) & 0x1)){
         return ;
     }
