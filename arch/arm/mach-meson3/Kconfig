@@ -120,6 +120,12 @@ config MACH_MESON3_REFF16_512M
 	bool "Support M3(512M) MBX platform"
 	help
 	  Include support for the Ref M3 board platform.
+
+config MACH_MESON3_REFF16_TLBB
+	select GENERIC_ALLOCATOR
+	bool "Support M3(The Little Black Box) MBX platform"
+	help
+	  Support for TLBB M3 boards.
 	  
 config MACH_MESON3_REFF20
 	select GENERIC_ALLOCATOR

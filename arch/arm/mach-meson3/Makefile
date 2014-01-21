@@ -13,7 +13,7 @@ obj-$(CONFIG_ARCH_MESON3)	+= pinmux.o
 obj-$(CONFIG_ARCH_MESON3)	+= gpio.o
 obj-$(CONFIG_ARCH_MESON3)	+= power_gate.o
 obj-$(CONFIG_ARCH_MESON3)	+= sd_pad.o
-obj-$(CONFIG_AML_SUSPEND) += power_suspend.o
+obj-$(CONFIG_AML_SUSPEND)	+= power_suspend.o
 obj-$(CONFIG_ARCH_MESON3)	+= lm.o usbclock.o clk_set.o sram.o sleep.o
 
 obj-$(CONFIG_MACH_MESON3_REFF01)	+= board-m3-reff01.o
@@ -36,6 +36,7 @@ obj-$(CONFIG_MACH_MESON3_REFF16_DONGLE)	+= board-m3-reff16_dongle.o
 obj-$(CONFIG_MACH_MESON3_REFF16_V1029)	+= board-m3-reff16.o
 obj-$(CONFIG_MACH_MESON3_REFF16_512M)	+= board-m3-reff16.o
 obj-$(CONFIG_MACH_MESON3_REFF16_IPTV)	+= board-m3-reff16-iptv.o
+obj-$(CONFIG_MACH_MESON3_REFF16_TLBB)   += board-m3-reff16-tlbb.o
 obj-$(CONFIG_MACH_MESON3_REFF20)	+= board-m3-reff20.o
 obj-$(CONFIG_MACH_MESON3_REFF33)	+= board-m3-reff33.o
 obj-$(CONFIG_MACH_MESON3_REFF34)	+= board-m3-reff34.o
