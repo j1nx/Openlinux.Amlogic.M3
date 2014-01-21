@@ -1,0 +1,79 @@
+#
+# Smart card driver configuration
+#
+
+menu "AMLOGIC DVB driver"
+
+config AM_DVB
+	tristate "AMLOGIC DVB driver"
+	default n
+	depends on DVB_CORE
+	help
+		Select to enable AMLogic DVB driver.
+
+config AMLOGIC_TS0
+	bool "Enable TS0"
+	default n
+	depends on AM_DVB
+	help
+		Enable TS0.
+
+config AMLOGIC_TS1
+	bool "Enable TS1"
+	default n
+	depends on AM_DVB
+	help
+		Enable TS1.
+
+config AMLOGIC_TS2
+	bool "Enable TS2"
+	default n
+	depends on AM_DVB
+	help
+		Enable TS2.
+
+config AMLOGIC_S_TS0
+	bool "Serial TS0"
+	default n
+	depends on AM_DVB
+	help
+		TS0 in serial mode.
+
+config AMLOGIC_S_TS1
+	bool "Serial TS1"
+	default n
+	depends on AM_DVB
+	help
+		TS1 in serial mode.
+
+config AMLOGIC_S_TS2
+	bool "Serial TS2"
+	default n
+	depends on AM_DVB
+	help
+		TS0 in serial mode.
+
+config AM_MXL101
+	tristate "MXL101 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable MXL101 demod driver.
+		
+config AM_AVL6211
+	tristate "AVL6211 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable AVL6211 demod driver.		
+		
+config AM_MN88436
+	tristate "MN88436 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable MN88436 demod driver.		
+
+
+endmenu
+

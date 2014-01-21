@@ -1,0 +1,109 @@
+#
+# Smart card driver configuration
+#
+
+menu "AMLOGIC DVB driver"
+
+config AM_DVB
+	tristate "AMLOGIC DVB driver"
+	default n
+	depends on DVB_CORE
+	help
+		Select to enable AMLogic DVB driver.
+
+config AMLOGIC_S_TS0
+	bool "Serial TS0"
+	default n
+	depends on AM_DVB
+	help
+		TS0 in serial mode.
+
+config AMLOGIC_S_TS1
+	bool "Serial TS1"
+	default n
+	depends on AM_DVB
+	help
+		TS1 in serial mode.
+
+config AMLOGIC_S_TS2
+	bool "Serial TS2"
+	default n
+	depends on AM_DVB
+	help
+		TS0 in serial mode.
+
+config AM_GX1001
+	tristate "GX1001 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable GX1001 demod driver.
+		
+config AM_MXL101
+	tristate "MXL101 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable MXL101 demod driver.
+		
+#config AM_AVL6211
+#	tristate "AVL6211 demod driver"
+#	default n
+#	depends on AM_DVB
+#	help
+#		Select to enable AVL6211 demod driver.		
+		
+config AM_ITE9173
+	tristate "ITE9173 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable ITE9173 demod driver.	
+
+config AM_RTL2830
+	tristate "RTL2830 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable RTL2830 demod driver.	
+		
+config AM_DS3000
+	tristate "DS3000 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable DS3000 demod driver.	
+config TH_SONY_T2
+	tristate "sony demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable sony demod driver.		
+
+config AM_ITE9133
+	tristate "ITE9133 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable ITE9133 demod driver.	
+		
+config AM_MN88436
+	tristate "MN88436 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable MN88436 demod driver.	
+		
+config AM_SI2168
+	tristate "SI2168 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable SI2168 demod driver.
+
+source "drivers/amlogic/dvb/dib7090/Kconfig" 
+
+source "drivers/amlogic/dvb/avl6211/Kconfig" 
+
+endmenu
+

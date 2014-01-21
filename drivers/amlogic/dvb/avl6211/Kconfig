@@ -1,0 +1,30 @@
+#
+# AVL6211 driver configuration
+#
+
+menuconfig AM_AVL6211
+	tristate "AVL6211 demod driver"
+	default n
+	depends on AM_DVB
+	help
+		Select to enable AVL6211 demod driver.		
+
+
+if AM_AVL6211
+
+config AVL6211_LNB_DEMOD_GPIO
+	bool "demod gpio ctrl"
+	depends on AM_AVL6211
+	default n
+	help
+	 AVL6211_LNB_DEMOD_GPIO mode(for mother board)
+
+config AVL_Spectrum_Invert
+	bool "Spectrum_Invert"
+	depends on AM_AVL6211
+	default n
+	help
+	 Spectrum_Invert(for mother board)
+
+endif
+
