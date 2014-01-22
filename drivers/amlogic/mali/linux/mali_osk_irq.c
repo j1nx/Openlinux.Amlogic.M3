@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2012 ARM Limited. All rights reserved.
+ * Copyright (C) 2010-2011 ARM Limited. All rights reserved.
  * 
  * This program is free software and is provided to you under the terms of the GNU General Public License version 2
  * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
@@ -15,12 +15,11 @@
 
 #include <linux/slab.h>	/* For memory allocation */
 #include <linux/workqueue.h>
-#include <linux/version.h>
 
 #include "mali_osk.h"
+#include "mali_kernel_core.h"
 #include "mali_kernel_common.h"
 #include "mali_kernel_license.h"
-#include "mali_kernel_linux.h"
 #include "linux/interrupt.h"
 
 typedef struct _mali_osk_irq_t_struct
@@ -33,8 +32,7 @@ typedef struct _mali_osk_irq_t_struct
 } mali_osk_irq_object_t;
 
 #if MALI_LICENSE_IS_GPL
-static struct workqueue_struct *pmm_wq = NULL;
-struct workqueue_struct *mali_wq = NULL;
+static struct workqueue_struct *pmm_wq=NULL;
 #endif
 
 typedef void (*workqueue_func_t)(void *);
@@ -61,23 +59,6 @@ _mali_osk_irq_t *_mali_osk_irq_init( u32 irqnum, _mali_osk_irq_uhandler_t uhandl
 
 	irq_object = kmalloc(sizeof(mali_osk_irq_object_t), GFP_KERNEL);
 	if (NULL == irq_object) return NULL;
-
-#if MALI_LICENSE_IS_GPL
-	if (NULL == mali_wq)
-	{
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
-		mali_wq = alloc_workqueue("mali", WQ_UNBOUND, 0);
-#else
-		mali_wq = create_workqueue("mali");
-#endif
-		if(NULL == mali_wq)
-		{
-			MALI_PRINT_ERROR(("Unable to create Mali workqueue\n"));
-			kfree(irq_object);
-			return NULL;
-		}
-	}
-#endif
 
 	/* workqueue API changed in 2.6.20, support both versions: */
 #if defined(INIT_DELAYED_WORK)
@@ -135,7 +116,7 @@ _mali_osk_irq_t *_mali_osk_irq_init( u32 irqnum, _mali_osk_irq_uhandler_t uhandl
 	irq_object->data = data;
 
 	/* Is this a real IRQ handler we need? */
-	if (irqnum != _MALI_OSK_IRQ_NUMBER_FAKE && irqnum != _MALI_OSK_IRQ_NUMBER_PMM)
+	if (!mali_benchmark && irqnum != _MALI_OSK_IRQ_NUMBER_FAKE && irqnum != _MALI_OSK_IRQ_NUMBER_PMM) 
 	{
 		if (-1 == irqnum)
 		{
@@ -172,31 +153,20 @@ void _mali_osk_irq_schedulework( _mali_osk_irq_t *irq )
 	}
 	else
 	{
-		queue_work(mali_wq, &irq_object->work_queue_irq_handle);
+#endif
+		schedule_work(&irq_object->work_queue_irq_handle);
+#if MALI_LICENSE_IS_GPL
 	}
-#else
-	schedule_work(&irq_object->work_queue_irq_handle);
 #endif
 }
 
 void _mali_osk_flush_workqueue( _mali_osk_irq_t *irq )
 {
 #if MALI_LICENSE_IS_GPL
-	if (NULL != irq)
-	{
-		mali_osk_irq_object_t *irq_object = (mali_osk_irq_object_t *)irq;
-		if(irq_object->irqnum == _MALI_OSK_IRQ_NUMBER_PMM )
-		{
-			flush_workqueue(pmm_wq);
-		}
-		else
-		{
-			flush_workqueue(mali_wq);
-		}
-	}
-	else
-	{
-		flush_workqueue(mali_wq);
+	mali_osk_irq_object_t *irq_object = (mali_osk_irq_object_t *)irq;
+        if(irq_object->irqnum == _MALI_OSK_IRQ_NUMBER_PMM )
+        {
+		flush_workqueue(pmm_wq);	
 	}
 #endif
 }
@@ -212,7 +182,10 @@ void _mali_osk_irq_term( _mali_osk_irq_t *irq )
 		destroy_workqueue(pmm_wq);
 	}
 #endif
-	free_irq(irq_object->irqnum, irq_object);
+	if (!mali_benchmark)
+	{
+		free_irq(irq_object->irqnum, irq_object);
+	}
 	kfree(irq_object);
 	flush_scheduled_work();
 }

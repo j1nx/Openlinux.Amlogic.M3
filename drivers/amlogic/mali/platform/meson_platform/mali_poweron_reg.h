@@ -35,18 +35,10 @@
 #define MALI_MMU_DTE_ADDR             0xd0063000
 #define MALI_MMU_STATUS               0xd0063004
 #define MALI_MMU_CMD                  0xd0063008
-#define MALI_MMU_RAW_STATUS           0xd0064014
-#define MALI_MMU_INT_CLEAR            0xd0064018
-#define MALI_MMU_INT_MASK             0xd006401c
-#define MALI_MMU_INT_STATUS           0xd0064020
 
 #define MALI_PP_MMU_DTE_ADDR          0xd0064000
 #define MALI_PP_MMU_STATUS            0xd0064004
 #define MALI_PP_MMU_CMD               0xd0064008
-#define MALI_PP_MMU_RAW_STATUS        0xd0064014
-#define MALI_PP_MMU_INT_CLEAR         0xd0064018
-#define MALI_PP_MMU_INT_MASK          0xd006401c
-#define MALI_PP_MMU_INT_STATUS        0xd0064020
 
 #define MALI_APB_PP_REND_LIST_ADDR    0xd0068000
 #define MALI_APB_PP_REND_RSW_BASE     0xd0068004
