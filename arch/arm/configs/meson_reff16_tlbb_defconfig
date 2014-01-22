@@ -1047,8 +1047,6 @@ CONFIG_UMP=m
 # Mali GPU OpenGL device driver
 #
 CONFIG_MALI400=m
-# CONFIG_MALI400_DEBUG is not set
-# CONFIG_MALI400_GPU_UTILIZATION is not set
 
 #
 # AMLOGIC Post Process Manager driver

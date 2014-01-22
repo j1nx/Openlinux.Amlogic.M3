@@ -4,7 +4,7 @@
 
 menu "Mali 400 GPU OpenGL device driver"
 
-config MALI
+config MALI400
 	tristate "Mali 400 GPU OpenGL device driver"
 	depends on m
 	default m
