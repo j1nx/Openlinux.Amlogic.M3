@@ -69,7 +69,7 @@
 	#define SUPPORT_HW_RFOFF_DETECTED	1
 	
 	#define CONFIG_LPS	1
-	#define CONFIG_BT_COEXIST	1
+	#define CONFIG_BT_COEXIST	0
 	//befor link
 	#define CONFIG_ANTENNA_DIVERSITY	 	
 	//after link
@@ -168,7 +168,7 @@
 #endif
 
 #define CONFIG_PREALLOC_RECV_SKB	1
-//#define CONFIG_REDUCE_USB_TX_INT	1	// Trade-off: Improve performance, but may cause TX URBs blocked by USB Host/Bus driver on few platforms.
+#define CONFIG_REDUCE_USB_TX_INT	1	// Trade-off: Improve performance, but may cause TX URBs blocked by USB Host/Bus driver on few platforms.
 //#define CONFIG_EASY_REPLACEMENT	1
 
 /* 
