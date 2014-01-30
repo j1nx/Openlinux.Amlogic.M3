@@ -28,8 +28,3 @@ where
 
 The result will be a mali.ko file, which can be loaded into the Linux kernel
 by using the insmod command.
-
-
-Note:
-    On Amlogic Meson platform, use TARGET_PLATFORM=aml-m1 CONFIG=aml-m1-m400-1.
-
