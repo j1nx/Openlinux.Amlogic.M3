@@ -367,7 +367,7 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 		addr = tail_valid_node->phy_blk_addr;
 		addr *= mtd->erasesize;
 		addr += tail_valid_node->phy_page_addr * mtd->writesize;
-		//printk("write:addr:0x%llx,phy_blk_addr:%d,phy_page_addr:%d,%s:%d\n",addr,tail_valid_node->phy_blk_addr,tail_valid_node->phy_page_addr,__func__,__LINE__);
+		printk("write:addr:0x%llx,phy_blk_addr:%d,phy_page_addr:%d,%s:%d\n",addr,tail_valid_node->phy_blk_addr,tail_valid_node->phy_page_addr,__func__,__LINE__);
 		if (tail_valid_node->phy_page_addr == 0) {
 
 			memset(&aml_key_erase_info, 0, sizeof(struct erase_info));
@@ -492,7 +492,6 @@ static int aml_nand_save_key(struct mtd_info *mtd, u_char *buf)
 #endif  //NAND_KEY_SAVE_MULTI_BLOCK
 
 #define KEY_SAVE_NAND_TAIL
-
 #ifdef KEY_SAVE_NAND_TAIL
 static int aml_nand_key_init(struct mtd_info *mtd)
 {
@@ -1191,7 +1190,7 @@ static int aml_nand_key_init(struct mtd_info *mtd)
 		printk("aml nand key not have valid addr: not wrote\n");
 	}
 	else{
-		printk("aml nand key valid addr: %llx \n", offset);
+		printk("aml nand key valid addr: %llx \n", (uint64_t)offset);
 	}
 	#ifdef NAND_KEY_SAVE_MULTI_BLOCK
 	tmp_valid_node = aml_chip->aml_nandkey_info->env_valid_node->next;
@@ -1379,7 +1378,7 @@ static int aml_nand_key_check(struct mtd_info *mtd)
 			if((aml_chip->new_nand_info.type) && (aml_chip->new_nand_info.type < 10))
 				offset += RETRY_NAND_BLK_NUM* mtd->erasesize;
 #endif			
-#endif  //KEY_SAVE_NAND_TAIL
+#endif //KEY_SAVE_NAND_TAIL
 			start_blk = (int)(offset >> phys_erase_shift);
 			total_blk = (int)(mtd->size >> phys_erase_shift);
 			for (i=start_blk; i<total_blk; i++) {

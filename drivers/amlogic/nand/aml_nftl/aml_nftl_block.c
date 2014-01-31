@@ -233,7 +233,7 @@ static int aml_nftl_add_cache_list(struct aml_nftl_blk_t *aml_nftl_blk, uint32_t
 	memcpy(cache_node->buf + blk_pos * 512, buf, blk_num * 512);
 	list_add_tail(&cache_node->list, &aml_nftl_blk->cache_list);
 	aml_nftl_blk->cache_buf_cnt++;
-	if (aml_nftl_blk->cache_buf_status == NFTL_CACHE_STATUS_IDLE) {
+	if ((aml_nftl_blk->cache_buf_status == NFTL_CACHE_STATUS_IDLE) && (aml_nftl_blk->nftl_thread != NULL)) {
 		aml_nftl_blk->cache_buf_status = NFTL_CACHE_STATUS_READY;
 		wake_up_process(aml_nftl_blk->nftl_thread);
 	}
@@ -466,6 +466,11 @@ int aml_nftl_init_bounce_buf(struct mtd_blktrans_dev *dev, struct request_queue 
 	unsigned int bouncesz;
 	struct aml_nftl_blk_t *aml_nftl_blk = (void *)dev;
 
+	if(aml_nftl_blk->queue && aml_nftl_blk->sg && aml_nftl_blk->bounce_sg)
+	{
+	    aml_nftl_dbg("_nftl_init_bounce_buf already init\n");
+	    return 0;
+        }
 	aml_nftl_blk->queue = rq;
 	bouncesz = (aml_nftl_blk->aml_nftl_info->writesize * NFTL_CACHE_FORCE_WRITE_LEN);
 	if(bouncesz < AML_NFTL_BOUNCE_SIZE)
@@ -482,12 +487,14 @@ int aml_nftl_init_bounce_buf(struct mtd_blktrans_dev *dev, struct request_queue 
 	for (i=0; i<NFTL_CACHE_FORCE_WRITE_LEN; i++)
 		aml_nftl_blk->bounce_buf_free[i] = NFTL_BOUNCE_FREE;
 
+    spin_lock_irq(rq->queue_lock);
 	queue_flag_test_and_set(QUEUE_FLAG_NONROT, rq);
 	blk_queue_bounce_limit(aml_nftl_blk->queue, BLK_BOUNCE_HIGH);
 	blk_queue_max_hw_sectors(aml_nftl_blk->queue, bouncesz / 512);
 	blk_queue_physical_block_size(aml_nftl_blk->queue, bouncesz);
 	blk_queue_max_segments(aml_nftl_blk->queue, bouncesz / PAGE_CACHE_SIZE);
 	blk_queue_max_segment_size(aml_nftl_blk->queue, bouncesz);
+    spin_unlock_irq(rq->queue_lock);
 
 	aml_nftl_blk->req = NULL;
 	
@@ -511,7 +518,7 @@ int aml_nftl_init_bounce_buf(struct mtd_blktrans_dev *dev, struct request_queue 
 
 	return 0;
 }
-
+#if 0
 static void aml_nftl_search_free_list(struct aml_nftl_blk_t *aml_nftl_blk, uint32_t sect_addr,
 										uint32_t blk_pos, uint32_t blk_num)
 {
@@ -592,7 +599,8 @@ static int aml_nftl_add_free_list(struct aml_nftl_blk_t *aml_nftl_blk, uint32_t 
 
 	return 1;
 }
-
+#endif
+#if 0
 static void aml_nftl_update_blktrans_sysinfo(struct mtd_blktrans_dev *dev, unsigned int cmd, unsigned long arg)
 {
 	struct aml_nftl_blk_t *aml_nftl_blk = (void *)dev;
@@ -628,7 +636,7 @@ static void aml_nftl_update_blktrans_sysinfo(struct mtd_blktrans_dev *dev, unsig
 
 	return;
 }
-
+#endif
 static int do_nftltrans_request(struct mtd_blktrans_ops *tr,
 			       struct mtd_blktrans_dev *dev,
 			       struct request *req)
@@ -636,6 +644,14 @@ static int do_nftltrans_request(struct mtd_blktrans_ops *tr,
 	struct aml_nftl_blk_t *aml_nftl_blk = (void *)dev;
 	int ret = 0, segments, i;
 	unsigned long block, nblk, blk_addr, blk_cnt;
+        if(!aml_nftl_blk->queue || !aml_nftl_blk->sg || !aml_nftl_blk->bounce_sg)
+        {
+            if (aml_nftl_init_bounce_buf(&aml_nftl_blk->mbd, aml_nftl_blk->mbd.rq))
+            {
+                aml_nftl_dbg("_nftl_init_bounce_buf  failed\n");
+            }
+        }
+
 	unsigned short max_segm = queue_max_segments(aml_nftl_blk->queue);
 	unsigned *buf_addr[max_segm+1];
 	unsigned offset_addr[max_segm+1];
@@ -789,21 +805,34 @@ static int aml_nftl_thread(void *arg)
 		schedule_timeout(period);
 	}
 
+	printk("%s:exit\n",__func__);
+	aml_nftl_blk->nftl_thread=NULL;
 	return 0;
 }
 
 static int aml_nftl_reboot_notifier(struct notifier_block *nb, unsigned long priority, void * arg)
-{
-	int error = 0;
-	struct aml_nftl_blk_t *aml_nftl_blk = nftl_notifier_to_blk(nb);
+ {
+    int error = 0;
+    struct aml_nftl_blk_t *aml_nftl_blk = nftl_notifier_to_blk(nb);
 
-	mutex_lock(&aml_nftl_lock);
-	//aml_nftl_dbg("nftl reboot flush cache data: %d\n", aml_nftl_blk->cache_buf_cnt);
-	if (aml_nftl_blk->cache_buf_cnt > 0)
-		error = aml_nftl_blk->write_cache_data(aml_nftl_blk, CACHE_CLEAR_ALL);
-	mutex_unlock(&aml_nftl_lock);
+    aml_nftl_dbg("%s, %d nftl flush all cache data: %d\n", __func__, __LINE__,
+            aml_nftl_blk->cache_buf_cnt);
+            
+    mutex_lock(&aml_nftl_lock);
+    //aml_nftl_dbg("nftl reboot flush cache data: %d\n", aml_nftl_blk->cache_buf_cnt);
+    if (aml_nftl_blk->cache_buf_cnt > 0)
+        error = aml_nftl_blk->write_cache_data(aml_nftl_blk, CACHE_CLEAR_ALL);
+    mutex_unlock(&aml_nftl_lock);
+               
+    if(aml_nftl_blk->nftl_thread!=NULL){
+        kthread_stop(aml_nftl_blk->nftl_thread);
+        aml_nftl_blk->nftl_thread=NULL;
+    }
+    aml_nftl_dbg("%s, %d nftl flush all cache data: %d\n", __func__, __LINE__,
+            aml_nftl_blk->cache_buf_cnt);
 
-	return error;
+    return error;
+
 }
 
 static void aml_nftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
@@ -850,12 +879,16 @@ static void aml_nftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	if (!(mtd->flags & MTD_WRITEABLE))
 		aml_nftl_blk->mbd.readonly = 0;
 
-	if (aml_nftl_init_bounce_buf(&aml_nftl_blk->mbd, tr->blkcore_priv->rq))
-		return;
 	if (add_mtd_blktrans_dev(&aml_nftl_blk->mbd))
 		aml_nftl_dbg("nftl add blk disk dev failed\n");
 
-	return;
+    if (aml_nftl_init_bounce_buf(&aml_nftl_blk->mbd, aml_nftl_blk->mbd.rq)){
+		aml_nftl_dbg("aml_nftl_init_bounce_buf  failed\n");
+		return;
+    }
+    
+    aml_nftl_dbg("aml_nftl_add_mtd ok\n");
+    return;
 }
 
 static int aml_nftl_open(struct mtd_blktrans_dev *mbd)
@@ -876,6 +909,7 @@ static int aml_nftl_release(struct mtd_blktrans_dev *mbd)
 
 	return error;
 }
+
 
 static void aml_nftl_blk_release(struct aml_nftl_blk_t *aml_nftl_blk)
 {
@@ -906,9 +940,9 @@ static struct mtd_blktrans_ops aml_nftl_tr = {
 	.blksize 	= 512,
 	.open		= aml_nftl_open,
 	.release	= aml_nftl_release,
-#if 0	//removed for cost too much time while count free sectors at the time of mounting FS.
+#if 0 //removed for cost too much time while count free sectors at the time of mounting FS.
 	.update_blktrans_sysinfo = aml_nftl_update_blktrans_sysinfo,
-#endif
+#endif	
 	.do_blktrans_request = do_nftltrans_request,
 	.writesect	= aml_nftl_writesect,
 	.flush		= aml_nftl_flush,
@@ -928,7 +962,11 @@ static void __exit cleanup_aml_nftl(void)
 	deregister_mtd_blktrans(&aml_nftl_tr);
 }
 
+#if defined(CONFIG_DEFERRED_MODULE_INIT) && defined(CONFIG_AML_NFTL)
+deferred_module_init(init_aml_nftl);
+#else
 module_init(init_aml_nftl);
+#endif
 module_exit(cleanup_aml_nftl);
 
 

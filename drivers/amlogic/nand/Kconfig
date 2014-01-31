@@ -2,28 +2,41 @@
 # Amlogic NAND device configuration
 #
 
-menu "AMLOGIC NAND Flash support"
+menu "Meson NAND Device Support"
 
 config AM_NAND
-	bool "Amlogic NAND FLASH M1/M2/M3 SUPPORT"
-	    depends on AMLOGIC_SERIES
-	default y
-        select MTD_NAND 
-	    select MTD_PARTITIONS
-        select MTD_BLOCK
-        select MTD_CHAR
-        help
-		This is Meson_M1 nand suport
+	bool "Meson NAND flash device"
+	default n
+	select MTD_NAND
+	select MTD_PARTITIONS
+	select MTD_BLOCK
+	select MTD_CHAR
+	select MTD
+	help
+	  Support for NAND flash on Amlogic Meson platforms
+
+config SPI_NAND_COMPATIBLE
+	bool "Meson SPI and NAND flash compatible"
+	depends on ARCH_MESON3 || ARCH_MESON6
+	default n
+	help
+	  Support SPI and NAND flash compatible
 
 config AM_NAND_RBPIN
-	bool "use nand rbpin (A3/M3 optional)"
-	    depends on AM_NAND
+	bool "Meson NAND RB bit support"
+	depends on AM_NAND
+	depends on ARCH_MESON3 || ARCH_MESON6
 	default y
-	
+	help
+	  Support NAND RB bit
+
 config AML_NAND_ENV
-	bool "use aml nand env (/dev/nand_env)"
-	    depends on AM_NAND
+	bool "Meson NAND environment variable device (dev/nand_env) support"
+	depends on AM_NAND
+	depends on ARCH_MESON3 || ARCH_MESON6
 	default y
+	help
+	  Support NAND environment variable device
 
 config AML_NAND_KEY
 	bool "Meson key data store in nand device(dev/nand_key) support"
@@ -32,7 +45,7 @@ config AML_NAND_KEY
 	default n
 	help
 	  Support   key variable store in NAND device
-
+	  
 config NAND_KEY_BLOCK_NUM
 	int "config nand key area block number"
 	depends on AML_NAND_KEY
@@ -42,12 +55,12 @@ config NAND_KEY_BLOCK_NUM
 		config nand key block number, the number must be even number
 
 config AML_NFTL
-	tristate "Amlogic NFTL (NAND Flash Translation Layer) support"
-	depends on (AM_NAND)
+	tristate "Meson NAND FTL support"
+	depends on AM_NAND
 	default m
-        help
-		This is aml nftl suport
-		
+	help
+	  Support NAND Flash Translation Layer
+	  
 config AML_NFTL_NEW
 	tristate "Meson NAND NEW_FTL support"
 	depends on AM_NAND
@@ -56,3 +69,4 @@ config AML_NFTL_NEW
 	  Support NAND Flash New Translation Layer
 
 endmenu
+        

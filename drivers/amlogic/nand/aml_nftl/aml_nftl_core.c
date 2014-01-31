@@ -20,6 +20,52 @@
 
 #include "aml_nftl.h"
 
+static int get_vt_node_info(struct aml_nftl_info_t *aml_nftl_info, addr_blk_t blk_addr)
+{
+	addr_blk_t vt_blk_num, phy_blk_num;
+	int k, node_length, node_len_actual;
+	struct vtblk_node_t  *vt_blk_node;
+	struct phyblk_node_t *phy_blk_node;
+	
+	vt_blk_num = blk_addr;
+	vt_blk_node = (struct vtblk_node_t *)(*(aml_nftl_info->vtpmt + vt_blk_num));
+	if (vt_blk_node == NULL){
+		aml_nftl_dbg("%s, %d, blk_addr:%d, have no vt node !!!!\n", __func__, __LINE__, blk_addr);
+		return -ENOMEM;
+	}
+	
+	node_len_actual = aml_nftl_get_node_length(aml_nftl_info, vt_blk_node);
+	int16_t valid_page[node_len_actual+2];
+	aml_nftl_dbg("###########%s, %d, blk_addr:%d, node_len_actual:%d\n", __func__, __LINE__, blk_addr, node_len_actual);
+	memset((unsigned char *)valid_page, 0x0, sizeof(int16_t)*(node_len_actual+2));
+
+	for (k=0; k<aml_nftl_info->pages_per_blk; k++) {
+
+		node_length = 0;
+		vt_blk_node = (struct vtblk_node_t *)(*(aml_nftl_info->vtpmt + vt_blk_num));
+		while (vt_blk_node != NULL) {
+
+			phy_blk_num = vt_blk_node->phy_blk_addr;
+			phy_blk_node = &aml_nftl_info->phypmt[phy_blk_num];
+			if (!(phy_blk_node->phy_page_delete[k>>3] & (1 << (k % 8))))
+				break;
+			aml_nftl_info->get_phy_sect_map(aml_nftl_info, phy_blk_num);
+			if ((phy_blk_node->phy_page_map[k] >= 0) && (phy_blk_node->phy_page_delete[k>>3] & (1 << (k % 8)))) {
+				valid_page[node_length]++;
+				aml_nftl_dbg("node_length:%d page:%d, at:phy_blk_num:%d\n", node_length, k, phy_blk_num);
+				break;
+			}
+			node_length++;
+			vt_blk_node = vt_blk_node->next;
+		}
+	}
+
+	for(k=0; k<node_len_actual; k++){
+		aml_nftl_dbg("valid_page[%d]: %d\n", k, valid_page[k]);
+	}
+
+	return 0;
+}
 int aml_nftl_badblock_handle(struct aml_nftl_info_t *aml_nftl_info, addr_blk_t phy_blk_addr, addr_blk_t logic_blk_addr)
 {
     struct aml_nftl_wl_t *aml_nftl_wl = aml_nftl_info->aml_nftl_wl;
@@ -147,7 +193,7 @@ int aml_nftl_check_node(struct aml_nftl_info_t *aml_nftl_info, addr_blk_t blk_ad
 			}
 			vt_blk_node = vt_blk_node->next;
 		}
-#endif		
+#endif
 	}
 #endif
 
@@ -198,7 +244,7 @@ int aml_nftl_check_node(struct aml_nftl_info_t *aml_nftl_info, addr_blk_t blk_ad
 	}
 
 	aml_nftl_free(valid_page);
-
+	
 	return status;
 }
 
@@ -298,11 +344,14 @@ static int aml_nftl_blk_mark_bad(struct aml_nftl_info_t *aml_nftl_info, addr_blk
 		do {
 			vt_blk_node_prev = vt_blk_node;
 			vt_blk_node = vt_blk_node->next;
+			
+			printk("aml_nftl_blk_mark_bad :vt_blk_node:0x%lx, blk_addr:%d\n", (long unsigned int)vt_blk_node, blk_addr);
+			//mdelay(10);
 
 			if ((vt_blk_node != NULL) && (vt_blk_node->phy_blk_addr == blk_addr)) {
 				vt_blk_node_prev->next = vt_blk_node->next;
 				aml_nftl_free(vt_blk_node);
-				vt_blk_node = NULL; //NULL for free				
+	            vt_blk_node = NULL; //NULL for free
 			}
 			else if ((vt_blk_node_prev != NULL) && (vt_blk_node_prev->phy_blk_addr == blk_addr)) {
 				if (*(aml_nftl_info->vtpmt + phy_blk_node->vtblk) == vt_blk_node_prev)
@@ -769,10 +818,11 @@ static void aml_nftl_add_block(struct aml_nftl_info_t *aml_nftl_info, addr_blk_t
 		else if (phy_blk_node_add->timestamp == phy_blk_node_curt->timestamp) {
 			aml_nftl_dbg("NFTL timestamp err logic blk: %d phy blk: %d %d\n", nftl_oob_info->vtblk, vt_blk_node_curt->phy_blk_addr, vt_blk_node_add->phy_blk_addr);
 			if (phy_blk_node_add->ec < phy_blk_node_curt->ec) {
-
-				vt_blk_node_prev->next = vt_blk_node_add;
+				//vt_blk_node_prev->next = vt_blk_node_add;
 				vt_blk_node_add->next = vt_blk_node_curt->next;
-				vt_blk_node_add = vt_blk_node_curt;
+				vt_blk_node_curt->next = vt_blk_node_add;
+				//	vt_blk_node_add = vt_blk_node_curt;
+				break;
 			}
 			vt_blk_node_curt = (struct vtblk_node_t *)(*(aml_nftl_info->vtpmt + nftl_oob_info->vtblk));
 			vt_blk_node_add->next = vt_blk_node_curt;
@@ -884,6 +934,14 @@ static void aml_nftl_creat_structure(struct aml_nftl_info_t *aml_nftl_info)
 	return;
 }
 
+/* Our partition node structure */
+struct mtd_part {
+	struct mtd_info mtd;
+	struct mtd_info *master;
+	uint64_t offset;
+	struct list_head list;
+};
+
 static ssize_t show_address_map_table(struct class *class, 
 			struct class_attribute *attr,	const char *buf, size_t count)
 {
@@ -894,6 +952,9 @@ static ssize_t show_address_map_table(struct class *class,
 	addr_blk_t logic_blk_addr, phy_blk_addr;
     uint32_t page_per_blk;
     int ret;
+    struct mtd_info *mtd = aml_nftl_info->mtd;
+    struct mtd_part *part = (struct mtd_part *)mtd;
+    loff_t phy_address;
     
 	ret =  sscanf(buf, "%x", &address);
     blks_per_sect = aml_nftl_info->writesize / 512;
@@ -905,6 +966,7 @@ static ssize_t show_address_map_table(struct class *class,
 
     ret = aml_nftl_get_valid_pos(aml_nftl_info, logic_blk_addr, &phy_blk_addr, logic_page_addr, &phy_page_addr, READ_OPERATION);
 	if (ret == AML_NFTL_FAILURE){
+        printk("AML_NFTL_FAILURE!!\n");
         return AML_NFTL_FAILURE;
 	}
 
@@ -912,14 +974,67 @@ static ssize_t show_address_map_table(struct class *class,
 		printk("the phy address not found\n");
 		return 1;
 	}
-
-    printk("address %x map phy address:blk addr %x page addr %x\n", address, logic_blk_addr, logic_page_addr);
+    phy_address = part->offset + (phy_blk_addr * mtd->erasesize) + (phy_page_addr * mtd->writesize);
+    printk("address %x map phy address:blk %x page %x (address %llx)\n", address, phy_blk_addr, phy_page_addr, phy_address);
 
 	return count;
 }
+static ssize_t show_logic_block_table(struct class *class,
+            struct class_attribute *attr,   char *buf)
+{
+    ssize_t count=0;
+    static addr_blk_t logic_blk_addr=0;
+    struct aml_nftl_info_t *aml_nftl_info = container_of(class, struct aml_nftl_info_t, cls);
+    logic_blk_addr=logic_blk_addr<aml_nftl_info->accessibleblocks?logic_blk_addr:0;
+    count += snprintf(&buf[count], PAGE_SIZE - count,
+            "Logic Block Address(%4dKBytes) :Physical Block Address ,",
+            aml_nftl_info->pages_per_blk * aml_nftl_info->writesize / 1024);
+    count += snprintf(&buf[count], PAGE_SIZE - count,
+                "start=%d,end=%d\n",
+                aml_nftl_info->startblock,aml_nftl_info->startblock);
+    for(;logic_blk_addr<aml_nftl_info->accessibleblocks;logic_blk_addr++)
+    {
+        struct vtblk_node_t * vt_blk_node = (struct vtblk_node_t *)(*(aml_nftl_info->vtpmt + logic_blk_addr));
+        if(vt_blk_node==NULL)
+            continue;
+        count+=snprintf(&buf[count],PAGE_SIZE-count,"%d:",logic_blk_addr);
+        if(count>=PAGE_SIZE)
+            return count;
+        while (vt_blk_node != NULL) {
+            count+=snprintf(&buf[count],PAGE_SIZE-count, "%d,", vt_blk_node->phy_blk_addr);
+            vt_blk_node = vt_blk_node->next;
+            if(count>=PAGE_SIZE)
+                        return count;
+        }
+        count+=snprintf(&buf[count],PAGE_SIZE-count,"\n");
+        if(count>=PAGE_SIZE)
+                    return count;
+
+    }
+
+
+    return count;
+}
+
+static ssize_t show_node_info(struct class *class, 
+			struct class_attribute *attr,	const char *buf, size_t count)
+{
+	struct aml_nftl_info_t *aml_nftl_info = container_of(class, struct aml_nftl_info_t, cls);
+	unsigned blk_addr;
+	int ret;
+
+	ret =  sscanf(buf, "%x", &blk_addr);
+
+    	get_vt_node_info(aml_nftl_info, blk_addr);
+	
+	return count;
+}
+
 
 static struct class_attribute nftl_class_attrs[] = {
-    __ATTR(map_table,  S_IRUGO | S_IWUSR, NULL,    show_address_map_table),
+    __ATTR(map_table,  S_IRUGO | S_IWUSR, show_logic_block_table,    show_address_map_table),
+//    __ATTR(logic_block_table,  S_IRUGO , show_logic_block_table,    NULL),
+	__ATTR(check_node,  S_IRUGO | S_IWUSR, NULL,    show_node_info),
     __ATTR_NULL
 };
 
@@ -968,7 +1083,8 @@ int aml_nftl_initialize(struct aml_nftl_blk_t *aml_nftl_blk)
 	if (!aml_nftl_info->vtpmt)
 		return -ENOMEM;
 	memset((unsigned char *)aml_nftl_info->phypmt, 0xff, sizeof(struct phyblk_node_t)*size_in_blk);
-
+    memset((unsigned char *)aml_nftl_info->vtpmt, 0, ((sizeof(void*) * aml_nftl_info->accessibleblocks)));
+    
 	aml_nftl_ops_init(aml_nftl_info);
 
 	aml_nftl_info->read_page = aml_nftl_read_page;
@@ -1073,7 +1189,7 @@ int aml_nftl_initialize(struct aml_nftl_blk_t *aml_nftl_blk)
     /*setup class*/
 	aml_nftl_info->cls.name = kzalloc(strlen((const char*)AML_NFTL_MAGIC)+1, GFP_KERNEL);
 
-    strcpy(aml_nftl_info->cls.name, (char*)AML_NFTL_MAGIC);
+    strcpy((char *)aml_nftl_info->cls.name, (char*)AML_NFTL_MAGIC);
     aml_nftl_info->cls.class_attrs = nftl_class_attrs;
    	error = class_register(&aml_nftl_info->cls);
 	if(error)
