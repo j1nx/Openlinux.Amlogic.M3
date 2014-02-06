@@ -74,6 +74,13 @@
 #include <linux/hdmi/hdmi_config.h>
 #endif
 
+/* GPIO Defines */
+// POWERSUPPLIES
+#define GPIO_PWR_WIFI  GPIO_C(5)
+#define GPIO_PWR_VCCIO  GPIO_AO(2)
+#define GPIO_PWR_VCCx2  GPIO_AO(6)
+#define GPIO_PWR_HDMI   GPIO_D(6)
+
 #ifdef CONFIG_SUSPEND
 static int suspend_state=0;
 #endif
@@ -350,33 +357,28 @@ static set_vbus_valid_ext_fun(unsigned int id,char val)
 	}
 }
 #endif
+
+/* usb wifi power 1:power on  0:power off */
+void extern_usb_wifi_power(int is_power_on)
+{
+  printk(KERN_INFO "usb_wifi_power %s\n", is_power_on ? "On" : "Off");
+  /* USB +3v3 Power Enable internal port, GPIO C5, ACTIVE LOW */ 
+  if(is_power_on) {
+    gpio_direction_output(GPIO_PWR_WIFI, 1);
+  } else {
+    gpio_direction_output(GPIO_PWR_WIFI, 0);
+  }
+
+}
+
+EXPORT_SYMBOL(extern_usb_wifi_power);
+
 static void set_usb_a_vbus_power(char is_power_on)
 {
 }
 
 static void set_usb_b_vbus_power(char is_power_on)
-{ /*wifi rtl8188cus power control*/
-#define USB_B_POW_GPIO         GPIOC_bank_bit0_15(5)
-#define USB_B_POW_GPIO_BIT     GPIOC_bit_bit0_15(5)
-#define USB_B_POW_GPIO_BIT_ON   1
-#define USB_B_POW_GPIO_BIT_OFF  0
-    if(is_power_on) {
-        printk(KERN_INFO "set usb b port power on (board gpio %d)!\n",USB_B_POW_GPIO_BIT);
-        set_gpio_mode(USB_B_POW_GPIO, USB_B_POW_GPIO_BIT, GPIO_OUTPUT_MODE);
-#if defined(CONFIG_MACH_MESON3_REFF16_V1029) || defined(CONFIG_MACH_MESON3_REFF16_512M) || defined(CONFIG_MACH_MESON3_REFF16_TLBB)
-	set_gpio_val(USB_B_POW_GPIO, USB_B_POW_GPIO_BIT, USB_B_POW_GPIO_BIT_OFF);
-#else
-        set_gpio_val(USB_B_POW_GPIO, USB_B_POW_GPIO_BIT, USB_B_POW_GPIO_BIT_ON);
-#endif
-    } else    {
-        printk(KERN_INFO "set usb b port power off (board gpio %d)!\n",USB_B_POW_GPIO_BIT);
-        set_gpio_mode(USB_B_POW_GPIO, USB_B_POW_GPIO_BIT, GPIO_OUTPUT_MODE);
-#if defined(CONFIG_MACH_MESON3_REFF16_V1029) || defined(CONFIG_MACH_MESON3_REFF16_512M) || defined(CONFIG_MACH_MESON3_REFF16_TLBB)
-	set_gpio_val(USB_B_POW_GPIO, USB_B_POW_GPIO_BIT, USB_B_POW_GPIO_BIT_ON);
-#else
-        set_gpio_val(USB_B_POW_GPIO, USB_B_POW_GPIO_BIT, USB_B_POW_GPIO_BIT_OFF);
-#endif
-    }
+{
 }
 
 //usb_a is OTG port
@@ -387,7 +389,7 @@ static struct lm_device usb_ld_a = {
     .resource.start = IO_USB_A_BASE,
     .resource.end = -1,
     .dma_mask_room = DMA_BIT_MASK(32),
-    .port_type = USB_PORT_TYPE_OTG,
+    .port_type = USB_PORT_TYPE_HOST,
     .port_speed = USB_PORT_SPEED_DEFAULT,
     .dma_config = USB_DMA_BURST_INCR16,
     .set_vbus_power = set_usb_a_vbus_power,
@@ -2910,48 +2912,22 @@ static void disable_unused_model(void)
  }
 static void __init power_hold(void)
 {
-    printk(KERN_INFO "power hold set high!\n");
-  //  set_gpio_val(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), 1);
-  //  set_gpio_mode(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), GPIO_OUTPUT_MODE);
+	printk(KERN_INFO "power hold set high!\n");
 
-        // VCC5V
-        set_gpio_mode(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), GPIO_OUTPUT_MODE);
-        set_gpio_val(GPIOD_bank_bit0_9(9), GPIOD_bit_bit0_9(9), 1);
-		 // hdmi power on
-        set_gpio_mode(GPIOD_bank_bit0_9(6), GPIOD_bit_bit0_9(6), GPIO_OUTPUT_MODE);
-        set_gpio_val(GPIOD_bank_bit0_9(6), GPIOD_bit_bit0_9(6), 1);
+	printk(KERN_INFO "set_vccio and set_vccx2 power up\n");
+	// VCCIO +3V3 -- GPIO AO2, ACTIVE HIGH
+	gpio_direction_output( GPIO_PWR_VCCIO, 1);
 
-		// MUTE
-       set_gpio_mode(GPIOX_bank_bit0_31(29), GPIOX_bit_bit0_31(29), GPIO_OUTPUT_MODE);
-       set_gpio_val(GPIOX_bank_bit0_31(29), GPIOX_bit_bit0_31(29), 0);
-
-      // PC Link
-//       set_gpio_mode(GPIOC_bank_bit0_15(4), GPIOC_bit_bit0_15(4), GPIO_OUTPUT_MODE);
-//       set_gpio_val(GPIOC_bank_bit0_15(4), GPIOC_bit_bit0_15(4), 1);
-			 
-		// VCC, set to high when suspend 
-        set_gpio_mode(GPIOAO_bank_bit0_11(4), GPIOAO_bit_bit0_11(4), GPIO_OUTPUT_MODE);
-        set_gpio_val(GPIOAO_bank_bit0_11(4), GPIOAO_bit_bit0_11(4), 0);
-        set_gpio_mode(GPIOAO_bank_bit0_11(5), GPIOAO_bit_bit0_11(5), GPIO_OUTPUT_MODE);
-        set_gpio_val(GPIOAO_bank_bit0_11(5), GPIOAO_bit_bit0_11(5), 0);
-
-     // VCCK
-        set_gpio_mode(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), GPIO_OUTPUT_MODE);
-        set_gpio_val(GPIOAO_bank_bit0_11(6), GPIOAO_bit_bit0_11(6), 1);
-	 // VCCIO
-        set_gpio_mode(GPIOAO_bank_bit0_11(2), GPIOAO_bit_bit0_11(2), GPIO_OUTPUT_MODE);
-        set_gpio_val(GPIOAO_bank_bit0_11(2), GPIOAO_bit_bit0_11(2), 1);
-
-    //init sata
-#if defined(CONFIG_ATA)
-    set_gpio_mode(GPIOC_bank_bit0_15(7), GPIOC_bit_bit0_15(7), GPIO_OUTPUT_MODE);
-    set_gpio_val(GPIOC_bank_bit0_15(7), GPIOC_bit_bit0_15(7), 1);
-#endif
+	// VCCx2 +5V -- GPIO AO6, ACTIVE low.
+	gpio_direction_output( GPIO_PWR_VCCx2, 0);
+ 
+	printk(KERN_INFO "set_hdmi power up\n");
+	// HDMI Power +5V -- GPIO D6, ACTIVE HIGH
+	gpio_direction_output( GPIO_PWR_HDMI, 1);
 	
-    //VCCx2 power up
-    printk(KERN_INFO "set_vccx2 power up\n");
-//    set_gpio_mode(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), GPIO_OUTPUT_MODE);
-//    set_gpio_val(GPIOA_bank_bit0_27(26), GPIOA_bit_bit0_27(26), 0);
+	// Turn On Wifi Power. So the wifi-module can be detected.
+	extern_usb_wifi_power(1);
+
 }
 
 static void __init LED_PWM_REG0_init(void)
@@ -2963,7 +2939,6 @@ static void __init LED_PWM_REG0_init(void)
     WRITE_CBUS_REG(PWM_MISC_REG_CD, (1<<0)	// enable
 																			|(0<<4)	// PWM_A_CLK_SEL: 0:XTAL;  1:ddr_pll_clk;  2:clk81;  3:sys_pll_clk;
 																			|(0x7f<<8)	// PWM_A_CLK_DIV
-																			|(1<<15)	// PWM_A_CLK_EN
 																			);
 #else
         // Enable VBG_EN
@@ -3004,11 +2979,11 @@ static __init void m1_init_machine(void)
     platform_add_devices(platform_devs, ARRAY_SIZE(platform_devs));
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
-    printk("***m1_init_machine: usb set mode.\n");
+    printk("***m3_init_machine: usb set mode.\n");
     set_usb_phy_clk(USB_PHY_CLOCK_SEL_XTAL_DIV2);
-//	set_usb_phy_id_mode(USB_PHY_PORT_A, USB_PHY_MODE_SW_HOST);
+    set_usb_phy_id_mode(USB_PHY_PORT_A, USB_PHY_MODE_SW_HOST);
     lm_device_register(&usb_ld_a);
-  	set_usb_phy_id_mode(USB_PHY_PORT_B,USB_PHY_MODE_SW_HOST);
+    set_usb_phy_id_mode(USB_PHY_PORT_B, USB_PHY_MODE_SW_HOST);
     lm_device_register(&usb_ld_b);
 #endif
     disable_unused_model();
